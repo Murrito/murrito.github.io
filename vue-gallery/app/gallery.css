@@ -1,0 +1,198 @@
+html {
+  -ms-touch-action: manipulation;
+      touch-action: manipulation;
+}
+
+.gallery {
+  position: fixed;
+  background: #333;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 10000;
+}
+
+.gallery:not(.dragging) {
+  -webkit-transition: all .5s ease;
+  transition: all .5s ease;
+}
+
+.gallery:not(.gallery--open) {
+  opacity: 0;
+  -webkit-transform: translateY(100%);
+          transform: translateY(100%);
+}
+
+.gallery .gallery__bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: center center no-repeat;
+  background-size: cover;
+  -webkit-filter: blur(10px);
+          filter: blur(10px);
+  opacity: .5;
+  -webkit-transform: scale(1.05);
+          transform: scale(1.05);
+  z-index: 0;
+}
+
+.gallery .gallery__legend {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  overflow: auto;
+}
+
+.gallery .gallery__legend--vertical {
+  width: 150px;
+  height: 100%;
+}
+
+.gallery .gallery__legend .gallery__thumbnail {
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 150px;
+  height: 100px;
+}
+
+.gallery .gallery__carousel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 100px);
+  overflow: hidden;
+}
+
+.gallery .gallery__carousel .gallery__images {
+  will-change: transform;
+}
+
+.gallery .gallery__carousel .gallery__images:not(.dragging) {
+  -webkit-transition: -webkit-transform .4s ease;
+  transition: -webkit-transform .4s ease;
+  transition: transform .4s ease;
+  transition: transform .4s ease, -webkit-transform .4s ease;
+}
+
+.gallery .gallery__carousel .gallery__image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.gallery .gallery__carousel .gallery__image * {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.gallery .gallery__carousel .gallery__image__bg {
+  background-size: cover;
+  -webkit-filter: blur(10px);
+          filter: blur(10px);
+  opacity: .5;
+  -webkit-transform: scale(1.05);
+          transform: scale(1.05);
+  -webkit-transition: background-image .5s ease;
+  transition: background-image .5s ease;
+  z-index: 0;
+}
+
+.gallery .gallery__carousel .gallery__image__view {
+  background-size: contain;
+  z-index: 1;
+}
+
+.gallery .gallery__controls .gallery__nav {
+  position: absolute;
+  display: block;
+  width: 80px;
+  height: 80px;
+  top: calc(50% - 40px);
+  z-index: 100;
+  cursor: pointer;
+}
+
+.gallery .gallery__controls .gallery__nav:before {
+  content: '';
+  display: block;
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: calc(50% - 10px);
+  left: calc(50% - 10px);
+  border-top: 4px solid #fff;
+  border-left: 4px solid #fff;
+}
+
+.gallery .gallery__controls .gallery__nav.prev {
+  left: 0;
+}
+
+.gallery .gallery__controls .gallery__nav.prev:before {
+  -webkit-transform: rotateZ(-45deg);
+          transform: rotateZ(-45deg);
+}
+
+.gallery .gallery__controls .gallery__nav.next {
+  right: 0;
+}
+
+.gallery .gallery__controls .gallery__nav.next:before {
+  -webkit-transform: rotateZ(135deg);
+          transform: rotateZ(135deg);
+}
+
+.gallery .gallery__controls .gallery__close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  height: 30px;
+  width: 30px;
+  -webkit-transform: rotateZ(45deg);
+          transform: rotateZ(45deg);
+  cursor: pointer;
+  z-index: 100;
+}
+
+.gallery .gallery__controls .gallery__close:before,
+.gallery .gallery__controls .gallery__close:after {
+  content: '';
+  background: #fff;
+  position: absolute;
+  display: block;
+}
+
+.gallery .gallery__controls .gallery__close:before {
+  top: 0;
+  height: 100%;
+  left: calc(50% - 2px);
+  width: 4px;
+}
+
+.gallery .gallery__controls .gallery__close:after {
+  left: 0;
+  width: 100%;
+  top: calc(50% - 2px);
+  height: 4px;
+}
+
