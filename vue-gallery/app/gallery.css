@@ -11,6 +11,7 @@ html {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  font-family: Arial, sans-serif;
   z-index: 10000;
 }
 
@@ -19,13 +20,29 @@ html {
   transition: all .5s ease;
 }
 
-.gallery:not(.gallery--open) {
+.gallery:not(.gallery--open):not(.gallery--embed) {
   opacity: 0;
+  pointer-events: none;
+}
+
+.gallery:not(.gallery--open):not(.gallery--embed) .gallery__images {
   -webkit-transform: translateY(100%);
           transform: translateY(100%);
 }
 
-.gallery .gallery__bg {
+.gallery--embed {
+  position: relative;
+}
+
+.gallery.changing .gallery__images,
+.gallery.changing .gallery__legend,
+.gallery.zoomed .gallery__images,
+.gallery.zoomed .gallery__legend {
+  -webkit-transition: none !important;
+  transition: none !important;
+}
+
+.gallery .gallery__blur {
   position: absolute;
   top: 0;
   left: 0;
@@ -39,6 +56,8 @@ html {
   -webkit-transform: scale(1.05);
           transform: scale(1.05);
   z-index: 0;
+  -webkit-transition: opacity .5s ease;
+  transition: opacity .5s ease;
 }
 
 .gallery .gallery__legend {
@@ -95,7 +114,7 @@ html {
   overflow: hidden;
 }
 
-.gallery .gallery__carousel .gallery__image * {
+.gallery .gallery__carousel .gallery__image *:not(img) {
   position: absolute;
   top: 0;
   left: 0;
@@ -105,21 +124,47 @@ html {
   background-repeat: no-repeat;
 }
 
-.gallery .gallery__carousel .gallery__image__bg {
-  background-size: cover;
-  -webkit-filter: blur(10px);
-          filter: blur(10px);
-  opacity: .5;
-  -webkit-transform: scale(1.05);
-          transform: scale(1.05);
-  -webkit-transition: background-image .5s ease;
-  transition: background-image .5s ease;
-  z-index: 0;
+.gallery .gallery__carousel .gallery__image:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.gallery .gallery__carousel .gallery__image img {
+  display: block;
+  pointer-events: none;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
 }
 
 .gallery .gallery__carousel .gallery__image__view {
   background-size: contain;
   z-index: 1;
+}
+
+.gallery.after-drag .gallery__image img {
+  -webkit-transition: -webkit-transform .5s ease;
+  transition: -webkit-transform .5s ease;
+  transition: transform .5s ease;
+  transition: transform .5s ease, -webkit-transform .5s ease;
+}
+
+.gallery .gallery__controls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.gallery .gallery__controls * {
+  pointer-events: auto;
 }
 
 .gallery .gallery__controls .gallery__nav {
@@ -194,5 +239,32 @@ html {
   width: 100%;
   top: calc(50% - 2px);
   height: 4px;
+}
+
+.gallery .gallery__controls .gallery__title {
+  position: absolute;
+  bottom: 15px;
+  left: 0;
+  right: 0;
+  line-height: 30px;
+  font-size: 16px;
+  color: #fff;
+  text-align: center;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.gallery .gallery__controls .gallery__cnt {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  line-height: 30px;
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.gallery .gallery__controls .gallery__cnt.mobile {
+  right: 15px;
+  text-align: center;
 }
 

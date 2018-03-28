@@ -115,7 +115,7 @@ module.exports = function normalizeComponent (
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(5);
-module.exports = __webpack_require__(18);
+module.exports = __webpack_require__(22);
 
 
 /***/ }),
@@ -127,7 +127,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_vue__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_vue__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__install__ = __webpack_require__(9);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__components_App__ = __webpack_require__(15);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__components_App__ = __webpack_require__(19);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__components_App___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2__components_App__);
 
 
@@ -2803,7 +2803,7 @@ var normalizeComponent = __webpack_require__(2)
 /* script */
 var __vue_script__ = __webpack_require__(12)
 /* template */
-var __vue_template__ = __webpack_require__(13)
+var __vue_template__ = __webpack_require__(17)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
@@ -2847,6 +2847,10 @@ module.exports = Component.exports
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__mixins_Styles__ = __webpack_require__(13);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__mixins_KeyEvents__ = __webpack_require__(14);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__mixins_CarouselDrag__ = __webpack_require__(15);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__mixins_Zoom__ = __webpack_require__(16);
 //
 //
 //
@@ -2893,6 +2897,28 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+
+
+
+
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     model: {
@@ -2900,10 +2926,13 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         event: 'toggle'
     },
 
+    mixins: [__WEBPACK_IMPORTED_MODULE_0__mixins_Styles__["a" /* default */], __WEBPACK_IMPORTED_MODULE_1__mixins_KeyEvents__["a" /* default */], __WEBPACK_IMPORTED_MODULE_2__mixins_CarouselDrag__["a" /* default */], __WEBPACK_IMPORTED_MODULE_3__mixins_Zoom__["a" /* default */]],
+
     props: {
         open: Boolean,
         images: Array,
         index: Number,
+        embed: Boolean,
         legend: Boolean,
         legendPosition: {
             type: String,
@@ -2921,26 +2950,30 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             active: this.index || 0,
             positions: ['top', 'left', 'bottom', 'right'],
 
+            items: [],
+
             windowWidth: 0,
             windowHeight: 0,
 
             isTouch: false,
-            carouselDragX: 0,
-            carouselDragY: 0,
-            carouselDragXDelta: 0,
-            carouselDragYDelta: 0,
             dragStartTime: 0,
+            dragType: '',
             legendDragX: 0,
             legendDragDelta: 0,
 
+            isChanging: false,
             isZoomed: false,
-            zoom: 1,
-            zoomStart: [0, 0]
+            isDragging: false,
+            isDragStop: false,
+            dragStopTimeout: null
         };
     },
 
 
     computed: {
+        activeItem: function activeItem() {
+            return this.items[this.active] || null;
+        },
         isMobile: function isMobile() {
             return this.windowWidth < 600;
         },
@@ -2951,13 +2984,151 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             return _.includes(['left', 'right'], this.legendPos);
         },
         total: function total() {
-            return this.images.length;
+            return this.items.length;
+        }
+    },
+
+    watch: {
+        open: function open(v) {
+            document.body.classList.toggle('gallery-open', this.open && !this.embed);
         },
+        index: function index(i) {
+            this.change();
+            this.goTo(i);
+        },
+
+        images: {
+            deep: true,
+            handler: function handler() {
+                this.setItems();
+            }
+        }
+    },
+
+    methods: {
+        toggle: function toggle() {
+            this.$emit('toggle', !this.open);
+            this.isZoomed = false;
+        },
+        close: function close() {
+            this.$emit('toggle', false);
+            this.isZoomed = false;
+        },
+        change: function change() {
+            var _this = this;
+
+            this.isChanging = true;
+
+            var onAfterTimeout = function onAfterTimeout() {
+                _this.isChanging = false;
+            };
+
+            setTimeout(onAfterTimeout, 10);
+        },
+        setItems: function setItems() {
+            var _this2 = this;
+
+            var items = [];
+
+            _.each(this.images, function (image, i) {
+                var item = {
+                    src: image.src || image,
+                    thumb: image.thumb || null,
+                    title: image.title || '',
+                    width: 0,
+                    height: 0
+                };
+                var img = new Image();
+
+                img.src = image.src || image;
+
+                img.onload = function () {
+                    _this2.$set(item, 'width', img.width);
+                    _this2.$set(item, 'height', img.height);
+                    _this2.onWindowResize();
+                };
+
+                items.push(item);
+            });
+
+            this.$set(this, 'items', items);
+        },
+        goTo: function goTo(i) {
+            this.active = Math.max(0, Math.min(this.total - 1, i));
+            this.isZoomed = false;
+        },
+        prev: function prev() {
+            this.goTo(this.active - 1);
+        },
+        next: function next() {
+            this.goTo(this.active + 1);
+        },
+        onWindowResize: function onWindowResize() {
+            this.windowWidth = this.embed ? this.$el.clientWidth : window.innerWidth;
+            this.windowHeight = this.embed ? this.$el.clientHeight : window.innerHeight;
+        },
+        onMouseMove: function onMouseMove(e) {
+            if (this.carouselDragStart.x) {
+                this.onCarouselMouseMove(e);
+            }
+        },
+        onMouseUp: function onMouseUp(e) {
+            if (this.carouselDragStart.x) {
+                this.onCarouselMouseUp(e);
+            }
+            this.dragStartTime = 0;
+        },
+        onTouchMove: function onTouchMove(e) {
+            if (this.carouselDragStart.x) {
+                this.onCarouselTouchMove(e);
+            }
+        },
+        onTouchEnd: function onTouchEnd(e) {
+            if (this.carouselDragStart.x) {
+                this.onCarouselTouchEnd(e);
+            }
+            this.dragStartTime = 0;
+        },
+        onLegendMouseDown: function onLegendMouseDown(e) {}
+    },
+
+    mounted: function mounted() {
+        this.setItems();
+        document.body.classList.toggle('gallery-open', this.open && !this.embed);
+
+        window.addEventListener('resize', this.onWindowResize);
+        window.addEventListener('mousemove', this.onMouseMove);
+        window.addEventListener('mouseup', this.onMouseUp);
+        window.addEventListener('touchmove', this.onTouchMove);
+        window.addEventListener('touchend', this.onTouchEnd);
+
+        this.onWindowResize();
+    },
+    destroyed: function destroyed() {
+        window.removeEventListener('resize', this.onWindowResize);
+        window.removeEventListener('mousemove', this.onMouseMove);
+        window.removeEventListener('mouseup', this.onMouseUp);
+        window.removeEventListener('touchmove', this.onTouchMove);
+        window.removeEventListener('touchend', this.onTouchEnd);
+    }
+});
+
+/***/ }),
+/* 13 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony default export */ __webpack_exports__["a"] = ({
+    computed: {
         galleryClass: function galleryClass() {
             return {
                 'gallery': true,
                 'gallery--open': this.open,
-                'dragging': !!this.carouselDragY
+                'gallery--embed': this.embed,
+                'zoomed': this.isZoomed,
+                'changing': this.isChanging,
+                'dragging': !!this.carouselDragStart.y,
+                'after-drag': this.isDragStop
             };
         },
         carouselWidth: function carouselWidth() {
@@ -2971,32 +3142,35 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 backgroundColor: this.background
             };
 
-            if (this.carouselDragYDelta > 0) {
-                style.transform = 'translateY(' + this.carouselDragYDelta + 'px)';
-                style.opacity = 1 - this.carouselDragYDelta / this.windowHeight;
+            if (Math.abs(this.carouselDragMoveDelta.y) > 0) {
+                style.opacity = 1 - Math.abs(this.carouselDragMoveDelta.y) / this.windowHeight;
             }
 
             return style;
         },
         carouselStyle: function carouselStyle() {
             return {
-                width: this.carouselWidth + 'px',
-                height: this.carouselHeight + 'px',
+                width: (this.isZoomed ? this.windowWidth : this.carouselWidth) + 'px',
+                height: (this.isZoomed ? this.windowHeight : this.carouselHeight) + 'px',
                 top: this.legend && this.legendPos === 'top' ? this.thumbnailHeight + 'px' : 0,
                 left: this.legend && this.legendPos === 'left' ? this.thumbnailWidth + 'px' : 0
             };
         },
         imagesStyle: function imagesStyle() {
-            var delta = this.active * this.carouselWidth;
+            var width = this.isZoomed ? this.windowWidth : this.carouselWidth;
+            var height = this.isZoomed ? this.windowHeight : this.carouselHeight;
+            var delta = this.active * width;
 
-            if (this.carouselDragXDelta !== 0) {
-                delta -= this.carouselDragXDelta;
+            if (this.carouselDragMoveDelta.x !== 0) {
+                delta -= this.carouselDragMoveDelta.x;
             }
 
+            var translateY = this.carouselDragMoveDelta.y ? this.carouselDragMoveDelta.y + 'px' : this.open || this.embed ? 0 : '100%';
+
             return {
-                width: this.total * this.carouselWidth + 'px',
-                height: this.carouselHeight + 'px',
-                transform: 'translateX(' + -delta + 'px)'
+                width: this.total * width + 'px',
+                height: height + 'px',
+                transform: 'translate3d(' + -delta + 'px, ' + translateY + ', 0)'
             };
         },
         thumbnailWidth: function thumbnailWidth() {
@@ -3005,21 +3179,29 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         thumbnailHeight: function thumbnailHeight() {
             return this.isMobile ? 50 : 100;
         },
+        controlsStyle: function controlsStyle() {
+            return {
+                width: this.carouselStyle.width,
+                height: this.carouselStyle.height
+            };
+        },
         legendStyle: function legendStyle() {
             return {
+                backgroundColor: this.background,
                 width: this.legendVertical ? this.thumbnailWidth + 'px' : '100%',
                 height: !this.legendVertical ? this.thumbnailHeight + 'px' : '100%',
                 top: this.legendPos !== 'bottom' ? 0 : 'auto',
                 left: this.legendPos !== 'right' ? 0 : 'auto',
                 bottom: this.legendPos !== 'top' ? 0 : 'auto',
-                right: this.legendPos !== 'left' ? 0 : 'auto'
+                right: this.legendPos !== 'left' ? 0 : 'auto',
+                transform: 'translateY(' + (this.isZoomed ? '100%' : 0) + ')'
             };
         },
         thumbnailsStyle: function thumbnailsStyle() {
             var delta = this.active * this.carouselWidth;
 
-            if (this.carouselDragXDelta !== 0) {
-                delta -= this.carouselDragXDelta;
+            if (this.carouselDragMoveDelta.x !== 0) {
+                delta -= this.carouselDragMoveDelta.x;
             }
 
             var width = this.legendVertical ? this.thumbnailWidth : this.total * this.thumbnailWidth;
@@ -3032,37 +3214,97 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             };
         }
     },
-
-    watch: {
-        open: function open(v) {
-            document.body.classList.toggle('gallery-open', this.open);
-        }
-    },
-
     methods: {
-        toggle: function toggle() {
-            this.$emit('toggle', !this.open);
-        },
-        close: function close() {
-            this.$emit('toggle', false);
+        imageItemStyle: function imageItemStyle(i) {
+            var width = this.isZoomed ? this.windowWidth : this.carouselWidth;
+            var height = this.isZoomed ? this.windowHeight : this.carouselHeight;
+            return {
+                width: width + 'px',
+                height: height + 'px',
+                transform: 'translateX(' + (i - 1) * width + 'px)'
+            };
         },
         imageStyle: function imageStyle(i) {
+            var item = this.items[i - 1];
+            var x = item.width / this.carouselWidth;
+            var y = item.height / this.carouselHeight;
+            var isZoomed = this.isZoomed && i === this.active + 1;
+
+            var width = item.width;
+            var height = item.height;
+
+            if (!isZoomed && (x > 1 || y > 1)) {
+                var k = Math.max(x, y);
+
+                width = item.width / k;
+                height = item.height / k;
+            }
+
+            var offsetX = isZoomed && this.carouselZoomOffset ? this.carouselZoomOffset.x : (this.carouselWidth - width) / 2;
+            var offsetY = isZoomed && this.carouselZoomOffset ? this.carouselZoomOffset.y : (this.carouselHeight - height) / 2;
+
             return {
-                width: this.carouselWidth + 'px',
-                height: this.carouselHeight + 'px',
-                transform: 'translateX(' + (i - 1) * this.carouselWidth + 'px)'
+                width: width + 'px',
+                height: height + 'px',
+                transform: 'translateX(' + offsetX + 'px) translateY(' + offsetY + 'px)'
+            };
+        },
+        getZoomOffset: function getZoomOffset(i) {
+            var item = this.items[i - 1];
+
+            var kx = item.width / this.carouselWidth;
+            var ky = item.height / this.carouselHeight;
+            var k = Math.max(kx, ky) > 1 ? Math.max(kx, ky) : 1;
+
+            var size = {
+                x: item.width,
+                y: item.height
+            };
+
+            var sizeSm = {
+                x: item.width / k,
+                y: item.height / k
+            };
+
+            var scale = sizeSm.x / size.x;
+
+            var offsetSm = {
+                x: (this.carouselWidth - sizeSm.x) / 2,
+                y: (this.carouselHeight - sizeSm.y) / 2
+            };
+
+            var pointSm = {
+                x: this.carouselDragEnd.x - offsetSm.x,
+                y: this.carouselDragEnd.y - offsetSm.y
+            };
+
+            var point = {
+                x: pointSm.x / scale,
+                y: pointSm.y / scale
+            };
+
+            return {
+                x: this.carouselDragEnd.x - point.x,
+                y: this.carouselDragEnd.y - point.y
+            };
+        },
+        bgStyle: function bgStyle(i) {
+            return {
+                backgroundImage: 'url(' + this.items[i - 1].src + ')',
+                opacity: i - 1 === this.active ? .5 : 0
             };
         },
         imageBg: function imageBg(i) {
             return {
-                backgroundImage: 'url(' + this.images[i - 1] + ')'
+                backgroundImage: 'url(' + this.items[i - 1].src + ')'
             };
         },
         thumbnailStyle: function thumbnailStyle(i) {
+            var item = this.items[i - 1];
             var style = {
                 width: this.thumbnailWidth + 'px',
                 height: this.thumbnailHeight + 'px',
-                backgroundImage: 'url(' + this.images[i - 1] + ')',
+                backgroundImage: 'url(' + (item.thumb || item.src) + ')',
                 opacity: i - 1 === this.active ? 1 : .5
             };
 
@@ -3075,76 +3317,189 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             }
 
             return style;
-        },
-        goTo: function goTo(i) {
-            this.active = Math.max(0, Math.min(this.total - 1, i));
-        },
-        prev: function prev() {
-            this.goTo(this.active - 1);
-        },
-        next: function next() {
-            this.goTo(this.active + 1);
-        },
-        onWindowResize: function onWindowResize() {
-            this.windowWidth = window.innerWidth;
-            this.windowHeight = window.innerHeight;
-        },
-        onMouseMove: function onMouseMove(e) {
-            if (this.carouselDragX) {
-                this.onCarouselMouseMove(e);
+        }
+    }
+});
+
+/***/ }),
+/* 14 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony default export */ __webpack_exports__["a"] = ({
+    methods: {
+        onWindowKeyDown: function onWindowKeyDown(e) {
+            if (this.embed || !this.open) {
+                return;
             }
-        },
-        onMouseUp: function onMouseUp(e) {
-            if (this.carouselDragX) {
-                this.onCarouselMouseUp(e);
+
+            switch (e.keyCode) {
+                case 13:
+                    // enter
+                    e.preventDefault();
+                    this.toggleZoom(true);
+                    break;
+                case 27:
+                    // esc
+                    e.preventDefault();
+                    this.close();
+                    break;
+                case 37:
+                    // arrow left
+                    e.preventDefault();
+                    this.isZoomed && this.moveZoom(this.windowWidth / 10, 0);
+                    !this.isZoomed && this.prev();
+                    break;
+                case 38:
+                    // arrow up
+                    e.preventDefault();
+                    this.isZoomed && this.moveZoom(0, this.windowHeight / 10);
+                    break;
+                case 39:
+                    // arrow right
+                    e.preventDefault();
+                    this.isZoomed && this.moveZoom(-this.windowWidth / 10, 0);
+                    !this.isZoomed && this.next();
+                    break;
+                case 40:
+                    // arrow bottom
+                    e.preventDefault();
+                    this.isZoomed && this.moveZoom(0, -this.windowHeight / 10);
+                    break;
             }
-            this.dragStartTime = 0;
-        },
-        onTouchMove: function onTouchMove(e) {
-            if (this.carouselDragX) {
-                this.onCarouselTouchMove(e);
+        }
+    },
+
+    mounted: function mounted() {
+        window.addEventListener('keydown', this.onWindowKeyDown);
+    },
+    destroyed: function destroyed() {
+        window.removeEventListener('keydown', this.onWindowKeyDown);
+    }
+});
+
+/***/ }),
+/* 15 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony default export */ __webpack_exports__["a"] = ({
+    data: function data() {
+        return {
+            carouselDragStart: { x: 0, y: 0 },
+            carouselDragEnd: { x: 0, y: 0 },
+            carouselZoomOffset: { x: 0, y: 0 }
+        };
+    },
+
+    computed: {
+        carouselDragDelta: function carouselDragDelta() {
+            if (!this.isDragging) {
+                return {
+                    x: 0,
+                    y: 0
+                };
             }
-        },
-        onTouchEnd: function onTouchEnd(e) {
-            if (this.carouselDragX) {
-                this.onCarouselTouchEnd(e);
+
+            var deltaX = this.carouselDragEnd.x - this.carouselDragStart.x;
+            var deltaY = 0;
+
+            if (this.isTouch && !this.embed) {
+                deltaY = this.carouselDragEnd.y - this.carouselDragStart.y;
             }
-            this.dragStartTime = 0;
+
+            this.dragType = Math.abs(deltaY) > 10 && !this.dragType ? 'v' : this.dragType;
+            this.dragType = Math.abs(deltaX) > 10 && !this.dragType ? 'h' : this.dragType;
+
+            if (this.dragType === 'v') {
+                return {
+                    x: 0,
+                    y: deltaY
+                };
+            } else if (this.dragType === 'h') {
+                return {
+                    x: deltaX,
+                    y: 0
+                };
+            }
+
+            return {
+                x: 0,
+                y: 0
+            };
         },
+        carouselDragMoveDelta: function carouselDragMoveDelta() {
+            return !this.isZoomed ? this.carouselDragDelta : {
+                x: 0,
+                y: 0
+            };
+        }
+    },
+    methods: {
         onCarouselMouseDown: function onCarouselMouseDown(e) {
-            this.carouselDragX = e.clientX;
-            this.carouselDragY = e.clientY;
+            this.isDragging = true;
+            clearTimeout(this.dragStopTimeout);
+            this.isDragStop = false;
+            this.carouselDragStart.x = this.carouselDragEnd.x = e.clientX;
+            this.carouselDragStart.y = this.carouselDragEnd.y = e.clientY;
+
             this.dragStartTime = new Date().getTime();
         },
         onCarouselMouseMove: function onCarouselMouseMove(e) {
-            this.carouselDragXDelta = e.clientX - this.carouselDragX;
+            var delta = {
+                x: e.clientX - this.carouselDragEnd.x,
+                y: e.clientY - this.carouselDragEnd.y
+            };
 
-            if (this.isTouch) {
-                var deltaY = e.clientY - this.carouselDragY;
-                var isVertical = deltaY > 30 && Math.abs(this.carouselDragXDelta) < 30;
+            this.carouselDragEnd.x = e.clientX;
+            this.carouselDragEnd.y = e.clientY;
 
-                this.carouselDragYDelta = isVertical ? deltaY : 0;
+            if (this.isZoomed && this.carouselZoomOffset) {
+                this.carouselZoomOffset.x += delta.x;
+                this.carouselZoomOffset.y += delta.y;
             }
         },
         onCarouselMouseUp: function onCarouselMouseUp(e) {
-            var isFast = new Date().getTime() - this.dragStartTime <= 500;
+            var isFast = new Date().getTime() - this.dragStartTime <= 200;
+            var isClick = isFast && Math.abs(this.carouselDragStart.x - this.carouselDragEnd.x) <= 5 && Math.abs(this.carouselDragStart.y - this.carouselDragEnd.y) <= 5;
             var minDelta = !isFast ? this.carouselWidth / 4 : 10;
 
-            if (Math.abs(this.carouselDragXDelta) > minDelta) {
-                if (this.carouselDragXDelta > 0) {
+            if (isClick) {
+                if (this.embed) {
+                    this.$emit('select-image', this.active);
+                } else {
+                    this.toggleZoom();
+                }
+            } else if (Math.abs(this.carouselDragMoveDelta.x) > minDelta) {
+                if (this.carouselDragMoveDelta.x > 0) {
                     this.prev();
                 } else {
                     this.next();
                 }
-            } else if (this.carouselDragYDelta > (!isFast ? this.windowHeight / 3 : 10)) {
-                this.carouselDragYDelta > 0 && this.close();
+            } else if (Math.abs(this.carouselDragMoveDelta.y) > (!isFast ? this.windowHeight / 3 : 10)) {
+                Math.abs(this.carouselDragMoveDelta.y) > 0 && this.close();
             }
 
+            if (!isClick) {
+                this.onAfterDragStop();
+                clearTimeout(this.dragStopTimeout);
+                this.isDragStop = true;
+                this.dragStopTimeout = setTimeout(this.onAfterDragStop, 500);
+
+                if (isFast && this.isZoomed) {
+                    this.carouselZoomOffset.x += this.carouselDragEnd.x - this.carouselDragStart.x;
+                    this.carouselZoomOffset.y += this.carouselDragEnd.y - this.carouselDragStart.y;
+                }
+            } else {
+                this.change();
+            }
+
+            this.isDragging = false;
             this.isTouch = false;
-            this.carouselDragX = 0;
-            this.carouselDragY = 0;
-            this.carouselDragXDelta = 0;
-            this.carouselDragYDelta = 0;
+            this.carouselDragStart.x = 0;
+            this.carouselDragStart.y = 0;
+            this.isZoomed && this.correctZoomedImageOffset();
+            this.dragType = '';
         },
         onCarouselTouchStart: function onCarouselTouchStart(e) {
             e.preventDefault();
@@ -3168,117 +3523,246 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         onCarouselTouchEnd: function onCarouselTouchEnd(e) {
             this.onCarouselMouseUp(e.touches[0]);
         },
-        onLegendMouseDown: function onLegendMouseDown(e) {}
+        onAfterDragStop: function onAfterDragStop() {
+            this.isDragStop = false;
+        }
     },
 
-    mounted: function mounted() {
-        this.$emit('toggle', true);
-        document.body.classList.toggle('gallery-open', this.open);
+    mounted: function mounted() {},
+    destroyed: function destroyed() {}
+});
 
-        window.addEventListener('resize', this.onWindowResize);
-        window.addEventListener('mousemove', this.onMouseMove);
-        window.addEventListener('mouseup', this.onMouseUp);
-        window.addEventListener('touchmove', this.onTouchMove);
-        window.addEventListener('touchend', this.onTouchEnd);
-        this.onWindowResize();
-    },
-    destroyed: function destroyed() {
-        window.removeEventListener('resize', this.onWindowResize);
-        window.removeEventListener('mousemove', this.onMouseMove);
-        window.removeEventListener('mouseup', this.onMouseUp);
-        window.removeEventListener('touchmove', this.onTouchMove);
-        window.removeEventListener('touchend', this.onTouchEnd);
+/***/ }),
+/* 16 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony default export */ __webpack_exports__["a"] = ({
+    methods: {
+        toggleZoom: function toggleZoom(center) {
+            this.isZoomed = !this.isZoomed && this.isImageZoomable(this.active);
+
+            if (!this.isZoomed) {
+                return;
+            }
+
+            this.carouselZoomOffset = this.getZoomedImageOffset(this.active, center);
+            this.correctZoomedImageOffset();
+        },
+        moveZoom: function moveZoom(x, y) {
+            if (this.isZoomed && this.carouselZoomOffset) {
+                this.carouselZoomOffset.x += x;
+                this.carouselZoomOffset.y += y;
+                this.correctZoomedImageOffset();
+            }
+        },
+        isImageZoomable: function isImageZoomable(i) {
+            return this.items[i].width >= this.windowWidth || this.items[i].height >= this.windowHeight;
+        },
+        setZoomedImageOffset: function setZoomedImageOffset() {
+            this.carouselZoomOffset = this.isZoomed ? this.getZoomedImageOffset(this.active) : null;
+        },
+        correctZoomedImageOffset: function correctZoomedImageOffset() {
+            var item = this.items[this.active];
+            var offset = this.carouselZoomOffset;
+
+            var minOffsetX = item.width >= this.windowWidth ? this.windowWidth - item.width : (this.windowWidth - item.width) / 2;
+
+            var minOffsetY = item.height >= this.windowHeight ? this.windowHeight - item.height : (this.windowHeight - item.height) / 2;
+
+            this.carouselZoomOffset = {
+                x: Math.max(Math.min(0, offset.x), minOffsetX),
+                y: Math.max(Math.min(0, offset.y), minOffsetY)
+            };
+        },
+        getZoomedImageOffset: function getZoomedImageOffset(i, center) {
+            var item = this.items[i];
+
+            var kx = item.width / this.carouselWidth;
+            var ky = item.height / this.carouselHeight;
+            var k = Math.max(kx, ky) > 1 ? Math.max(kx, ky) : 1;
+
+            var size = {
+                x: item.width,
+                y: item.height
+            };
+
+            if (center) {
+                return {
+                    x: (this.carouselWidth - size.x) / 2,
+                    y: (this.carouselHeight - size.y) / 2
+                };
+            }
+
+            var sizeSm = {
+                x: item.width / k,
+                y: item.height / k
+            };
+
+            var scale = sizeSm.x / size.x;
+
+            var offsetSm = {
+                x: (this.carouselWidth - sizeSm.x) / 2,
+                y: (this.carouselHeight - sizeSm.y) / 2
+            };
+
+            var pointSm = {
+                x: this.carouselDragEnd.x - offsetSm.x,
+                y: this.carouselDragEnd.y - offsetSm.y
+            };
+
+            var point = {
+                x: pointSm.x / scale,
+                y: pointSm.y / scale
+            };
+
+            return {
+                x: this.carouselDragEnd.x - point.x,
+                y: this.carouselDragEnd.y - point.y
+            };
+        }
     }
 });
 
 /***/ }),
-/* 13 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", { class: _vm.galleryClass, style: _vm.galleryStyle }, [
-    _c("div", { staticClass: "gallery__carousel", style: _vm.carouselStyle }, [
-      _vm.blur
-        ? _c("div", {
-            staticClass: "gallery__bg",
-            style: _vm.imageBg(_vm.active + 1)
-          })
-        : _vm._e(),
-      _vm._v(" "),
-      _c(
-        "div",
-        {
-          class: ["gallery__images", { dragging: !!_vm.carouselDragX }],
-          style: _vm.imagesStyle,
-          on: {
-            mousedown: _vm.onCarouselMouseDown,
-            touchstart: _vm.onCarouselTouchStart
-          }
-        },
-        [
-          _vm._l(_vm.total, function(i) {
-            return [
-              _c(
-                "div",
-                { staticClass: "gallery__image", style: _vm.imageStyle(i) },
-                [
-                  _c("div", {
-                    staticClass: "gallery__image__view",
-                    style: _vm.imageBg(i)
-                  })
-                ]
-              )
-            ]
-          })
-        ],
-        2
-      ),
-      _vm._v(" "),
-      _c("div", { staticClass: "gallery__controls" }, [
-        _c("div", { staticClass: "gallery__close", on: { click: _vm.close } }),
-        _vm._v(" "),
-        !_vm.isMobile
-          ? _c("div", {
-              staticClass: "gallery__nav prev",
-              on: { click: _vm.prev }
-            })
+  return !!_vm.items.length
+    ? _c("div", { class: _vm.galleryClass, style: _vm.galleryStyle }, [
+        _vm.blur
+          ? _c(
+              "div",
+              { staticClass: "gallery__bg" },
+              [
+                _vm._l(_vm.total, function(i) {
+                  return [
+                    _c("div", {
+                      staticClass: "gallery__blur",
+                      style: _vm.bgStyle(i)
+                    })
+                  ]
+                })
+              ],
+              2
+            )
           : _vm._e(),
         _vm._v(" "),
-        !_vm.isMobile
-          ? _c("div", {
-              staticClass: "gallery__nav next",
-              on: { click: _vm.next }
-            })
-          : _vm._e()
-      ])
-    ]),
-    _vm._v(" "),
-    _vm.legend
-      ? _c(
+        _c(
           "div",
-          { staticClass: "gallery__legend", style: _vm.legendStyle },
+          { staticClass: "gallery__carousel", style: _vm.carouselStyle },
           [
-            _vm._l(_vm.total, function(i) {
-              return [
-                _c("div", {
-                  staticClass: "gallery__thumbnail",
-                  style: _vm.thumbnailStyle(i),
-                  on: {
-                    click: function($event) {
-                      _vm.goTo(i - 1)
-                    }
-                  }
+            _c(
+              "div",
+              {
+                class: [
+                  "gallery__images",
+                  { dragging: !!_vm.carouselDragStart.x }
+                ],
+                style: _vm.imagesStyle,
+                on: {
+                  mousedown: _vm.onCarouselMouseDown,
+                  touchstart: _vm.onCarouselTouchStart
+                }
+              },
+              [
+                _vm._l(_vm.total, function(i) {
+                  return [
+                    _c(
+                      "div",
+                      {
+                        staticClass: "gallery__image",
+                        style: _vm.imageItemStyle(i)
+                      },
+                      [
+                        _c("img", {
+                          style: _vm.imageStyle(i),
+                          attrs: { src: _vm.items[i - 1].src }
+                        })
+                      ]
+                    )
+                  ]
                 })
-              ]
-            })
+              ],
+              2
+            )
+          ]
+        ),
+        _vm._v(" "),
+        _c(
+          "div",
+          { staticClass: "gallery__controls", style: _vm.controlsStyle },
+          [
+            !_vm.isMobile && !_vm.embed
+              ? _c("div", {
+                  staticClass: "gallery__close",
+                  on: { click: _vm.close }
+                })
+              : _vm._e(),
+            _vm._v(" "),
+            !_vm.isZoomed
+              ? [
+                  (!_vm.isMobile || _vm.embed) && _vm.active > 0
+                    ? _c("div", {
+                        staticClass: "gallery__nav prev",
+                        on: { click: _vm.prev }
+                      })
+                    : _vm._e(),
+                  _vm._v(" "),
+                  (!_vm.isMobile || _vm.embed) && _vm.active < _vm.total - 1
+                    ? _c("div", {
+                        staticClass: "gallery__nav next",
+                        on: { click: _vm.next }
+                      })
+                    : _vm._e(),
+                  _vm._v(" "),
+                  _c("div", { staticClass: "gallery__title" }, [
+                    _vm._v(_vm._s(_vm.activeItem.title || ""))
+                  ]),
+                  _vm._v(" "),
+                  _c("div", { staticClass: "gallery__cnt" }, [
+                    _vm._v(_vm._s(_vm.active + 1) + " / " + _vm._s(_vm.total))
+                  ])
+                ]
+              : _vm._e()
           ],
           2
-        )
-      : _vm._e()
-  ])
+        ),
+        _vm._v(" "),
+        _vm.legend
+          ? _c(
+              "div",
+              { staticClass: "gallery__legend", style: _vm.legendStyle },
+              [
+                _c(
+                  "div",
+                  { staticClass: "gallery__thumbnails" },
+                  [
+                    _vm._l(_vm.total, function(i) {
+                      return [
+                        _c("div", {
+                          staticClass: "gallery__thumbnail",
+                          style: _vm.thumbnailStyle(i),
+                          on: {
+                            click: function($event) {
+                              _vm.goTo(i - 1)
+                            }
+                          }
+                        })
+                      ]
+                    })
+                  ],
+                  2
+                )
+              ]
+            )
+          : _vm._e()
+      ])
+    : _vm._e()
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -3291,16 +3775,16 @@ if (false) {
 }
 
 /***/ }),
-/* 14 */,
-/* 15 */
+/* 18 */,
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
 var normalizeComponent = __webpack_require__(2)
 /* script */
-var __vue_script__ = __webpack_require__(16)
+var __vue_script__ = __webpack_require__(20)
 /* template */
-var __vue_template__ = __webpack_require__(17)
+var __vue_template__ = __webpack_require__(21)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
@@ -3339,11 +3823,26 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 16 */
+/* 20 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -3359,29 +3858,75 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     data: function data() {
         return {
             gallery: false,
-            photos: ['https://murrito.github.io/vue-gallery/app/images/1.jpg', 'https://murrito.github.io/vue-gallery/app/images/2.jpg', 'https://murrito.github.io/vue-gallery/app/images/3.jpg', 'https://murrito.github.io/vue-gallery/app/images/4.jpg', 'https://murrito.github.io/vue-gallery/app/images/5.jpg', 'https://murrito.github.io/vue-gallery/app/images/6.jpg', 'https://murrito.github.io/vue-gallery/app/images/7.jpg', 'https://murrito.github.io/vue-gallery/app/images/8.jpg', 'https://murrito.github.io/vue-gallery/app/images/9.jpg', 'https://murrito.github.io/vue-gallery/app/images/10.jpg']
+            firstImageId: 2,
+            photos: [{ src: 'https://murrito.github.io/vue-gallery/app/images/1.jpg', title: 'Funny' }, { src: 'https://murrito.github.io/vue-gallery/app/images/2.jpg', title: 'Sunny' }, { src: 'https://murrito.github.io/vue-gallery/app/images/3.jpg', title: 'Flowery' }, { src: 'https://murrito.github.io/vue-gallery/app/images/4.jpg', title: 'Sleepy' }, { src: 'https://murrito.github.io/vue-gallery/app/images/5.jpg', title: 'Curious' }, { src: 'https://murrito.github.io/vue-gallery/app/images/6.jpg', title: 'Lucky' }, { src: 'https://murrito.github.io/vue-gallery/app/images/7.jpg', title: 'Little' }, { src: 'https://murrito.github.io/vue-gallery/app/images/8.jpg', title: 'Grassy' }, { src: 'https://murrito.github.io/vue-gallery/app/images/9.jpg', title: 'Lazy' }, { src: 'https://murrito.github.io/vue-gallery/app/images/10.jpg', title: 'Playful' }]
         };
     }
 });
 
 /***/ }),
-/* 17 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
+  var this$1 = this
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("gallery", {
-    attrs: { images: _vm.photos, legend: "", blur: "" },
-    model: {
-      value: _vm.gallery,
-      callback: function($$v) {
-        _vm.gallery = $$v
-      },
-      expression: "gallery"
-    }
-  })
+  return _c(
+    "div",
+    { staticClass: "example" },
+    [
+      _c(
+        "div",
+        {
+          staticClass: "block",
+          staticStyle: { width: "800px", height: "500px" }
+        },
+        [
+          _c("gallery", {
+            attrs: { images: _vm.photos, embed: "", legend: "", blur: "" },
+            on: {
+              "select-image": function(i) {
+                this$1.firstImageId = i
+                this$1.gallery = true
+              }
+            }
+          })
+        ],
+        1
+      ),
+      _vm._v(" "),
+      _c(
+        "span",
+        {
+          on: {
+            click: function($event) {
+              _vm.gallery = !_vm.gallery
+            }
+          }
+        },
+        [_vm._v("Toggle gallery")]
+      ),
+      _vm._v(" "),
+      _c("gallery", {
+        attrs: {
+          images: _vm.photos,
+          index: _vm.firstImageId,
+          legend: "",
+          blur: ""
+        },
+        model: {
+          value: _vm.gallery,
+          callback: function($$v) {
+            _vm.gallery = $$v
+          },
+          expression: "gallery"
+        }
+      })
+    ],
+    1
+  )
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -3394,7 +3939,7 @@ if (false) {
 }
 
 /***/ }),
-/* 18 */
+/* 22 */
 /***/ (function(module, exports) {
 
 // removed by extract-text-webpack-plugin
